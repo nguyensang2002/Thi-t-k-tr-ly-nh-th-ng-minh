@@ -1,0 +1,122 @@
+//++++++++++++++++++++++++++++++++++++++ Các thư viện+++++++++++++++++++++++++++++++++++++++++++++++
+
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_Sensor.h> // Thư viện hỗ trợ cảm biến từ Adafruit  
+#include <Adafruit_Sensor.h> // Thư viện hỗ trợ cảm biến từ Adafruit                               +
+#include <Adafruit_BME280.h> // Thư viện để tương tác với cảm biến BME280   
+#include <Adafruit_GFX.h>
+#include <Adafruit_SH110X.h>
+
+//--------------------------------------------------------------OLED_BME280---------------------------------------------------------------
+/*#include <SPI.h>
+#define BME_SCK 18
+#define BME_MISO 19
+#define BME_MOSI 23
+#define BME_CS 5*/
+
+#define SEALEVELPRESSURE_HPA (1013.25)
+
+Adafruit_BME280 bme; // I2C
+//Adafruit_BME280 bme(BME_CS); // hardware SPI
+//Adafruit_BME280 bme(BME_CS, BME_MOSI, BME_MISO, BME_SCK); // software SPI
+
+/* Uncomment the initialize the I2C address , uncomment only one, If you get a totally blank screen try the other*/
+#define i2c_Address 0x3c //initialize with the I2C addr 0x3C Typically eBay OLED's
+//#define i2c_Address 0x3d //initialize with the I2C addr 0x3D Typically Adafruit OLED's
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET -1   //   QT-PY / XIAO
+Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+#define LOGO16_GLCD_HEIGHT 16
+#define LOGO16_GLCD_WIDTH  16
+unsigned long delayTime;
+
+void loop_oled() {
+    // Hàm này sẽ được gọi liên tục để đọc dữ liệu từ cảm biến BME280 và hiển thị lên màn hình OLED
+
+    display.clearDisplay(); // Xóa màn hình để chuẩn bị vẽ dữ liệu mới
+
+    float temperature = bme.readTemperature(); // Đọc nhiệt độ từ cảm biến BME280
+    float pressure = bme.readPressure() / 100.0F; // Đọc áp suất từ cảm biến BME280 và chuyển đổi sang hPa
+    float humidity = bme.readHumidity(); // Đọc độ ẩm từ cảm biến BME280
+    float altitude = bme.readAltitude(SEALEVELPRESSURE_HPA); // Đọc độ cao từ cảm biến BME280 dựa trên áp suất biển
+
+    // In các giá trị nhiệt độ, áp suất, độ ẩm và độ cao ra Serial Monitor
+    Serial.print("Temperature = "); Serial.print(temperature); Serial.println("*C");
+    Serial.print("Pressure = "); Serial.print(pressure); Serial.println("hPa");
+    Serial.print("Humidity = "); Serial.print(humidity); Serial.println("%");
+    Serial.print("Altitude = "); Serial.print(altitude); Serial.println("ft");
+
+    // Hiển thị các giá trị nhiệt độ, áp suất, độ ẩm và độ cao lên màn hình OLED
+    display.setTextSize(1);
+    display.setTextColor(SH110X_WHITE);
+    display.setCursor(0, 0);
+    display.print("Temperature: "); display.print(temperature); display.println("*C");
+    display.print("Pressure: "); display.print(pressure); display.println("hPa");
+    display.print("Humidity: "); display.print(humidity); display.println("%");
+    display.print("Altitude: "); display.print(altitude); display.println("ft");
+
+    display.display(); // Hiển thị dữ liệu đã vẽ lên màn hình
+    delay(1000); // Chờ 1 giây trước khi lặp lại
+}
+
+void setup_oled_bm280()
+{
+  Serial.println(F("BME280 test"));
+   
+  // Show image buffer on the display hardware.
+  // Since the buffer is intialized with an Adafruit splashscreen
+  // internally, this will display the splashscreen.
+
+  delay(250); // wait for the OLED to power up
+  display.begin(i2c_Address, true); // Address 0x3C default
+ //display.setContrast (0); // dim display
+ 
+  display.display();
+  delay(2000);
+
+  // Clear the buffer.
+  display.clearDisplay();
+
+  // draw a single pixel
+  display.drawPixel(10, 10, SH110X_WHITE);
+  // Show the display buffer on the hardware.
+  // NOTE: You _must_ call display after making any drawing commands
+  // to make them visible on the display hardware!
+  display.display();
+  delay(2000);
+  display.clearDisplay();
+  
+  
+  bool status;
+  // default settings
+  // (you can also pass in a Wire library object like &Wire2)
+  status = bme.begin(0x76);  
+  if (!status) {
+    Serial.println("Could not find a valid BME280 sensor, check wiring!");
+    while (1);
+  }
+
+  Serial.println("-- Default Test --");
+  delayTime = 1000;
+
+  Serial.println();
+}
+
+
+//----------------------------------------------------------------OLED_BME280----------------------------------------------------
+
+void setup() {
+  Serial.begin(9600);
+  
+  setup_oled_bm280();  
+  
+}
+
+void loop() {  
+  loop_oled(); 
+  
+}
